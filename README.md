@@ -46,9 +46,10 @@ asar --version
 
 1. Установите **Grand Theft Auto V Legacy**, а не Enhanced.
 2. Выберите Proton Experimental в настройках совместимости Steam.
-3. Один раз запустите игру, чтобы Steam создал
-   `steamapps/compatdata/271590`, а Rockstar Games Launcher завершил настройку.
-4. Пройдите сюжетный пролог и нормально закройте игру.
+3. Один раз запустите игру через Steam и дождитесь завершения первичной
+   настройки Rockstar Games Launcher. После создания
+   `steamapps/compatdata/271590` можно закрыть лаунчер — проходить пролог не
+   требуется.
 
 ## Установка раннера
 

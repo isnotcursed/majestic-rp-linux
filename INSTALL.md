@@ -51,7 +51,9 @@ chmod +x install-and-run-majestic-proton.sh
 
 ## Первый запуск
 
-Сначала один раз запустите GTA V Legacy через Steam. Затем выполните:
+Сначала один раз запустите GTA V Legacy через Steam, дождитесь первичной
+настройки Rockstar Games Launcher и появления Proton-префикса `271590`.
+Проходить пролог не требуется. Затем выполните:
 
 ```bash
 ./install-and-run-majestic-proton.sh doctor
