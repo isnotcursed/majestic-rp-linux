@@ -28,8 +28,17 @@ class DebugLogSession:
         return self.run_dir / name
 
 
-def start_debug_log_session(*, logger: logging.Logger | None = None) -> DebugLogSession:
-    root = Path("logs").resolve()
+def debug_log_root(configured_directory: Path | None = None) -> Path:
+    """Use a writable user location, independent of the AppImage mount/cwd."""
+    if configured_directory is not None:
+        return configured_directory.expanduser() / "logs"
+    state_home = os.environ.get("XDG_STATE_HOME")
+    base = Path(state_home).expanduser() if state_home else Path.home() / ".local" / "state"
+    return base / "majestic-runner" / "logs"
+
+
+def start_debug_log_session(*, logger: logging.Logger | None = None, log_directory: Path | None = None) -> DebugLogSession:
+    root = debug_log_root(log_directory)
     root.mkdir(parents=True, exist_ok=True)
     now = datetime.now()
     run_dir = root / now.strftime("%Y-%m-%d_%H-%M-%S")
