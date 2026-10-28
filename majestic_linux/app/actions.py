@@ -5,14 +5,11 @@ from pathlib import Path
 
 from ..core.errors import RunnerError
 from ..detection.paths import DetectionResult, find_majestic_exes
-from ..discord.bridge import configure_discord_bridge_environment, stop_discord_bridge
 from ..patching.patcher import patch_js_tree
 from ..runtime.cleanup import UninstallCleanupOptions, delete_cleanup_candidates, find_majestic_cleanup_candidates, find_majestic_uninstall_candidates
-from ..runtime.fonts import apply_emoji_font_fix, emoji_font_fix_is_applied
 from ..runtime.input import clear_caps_lock
 from ..runtime.fixups import prepare_proton_runtime_fixups
 from ..runtime.launcher import install_majestic_launcher
-from ..runtime.multiplayer_repair import latest_repair_time, repair_gta_conflicts, repair_multiplayer_cache
 from ..runtime.proton import build_proton_command, run_proton_managed
 from ..runtime.tricks import apply_powershell, apply_win10_mode, powershell_setup_is_complete
 from ..runtime.wine import ensure_egs_launcher_symlink, prepare_optional_storage_drive, prepare_wine_mapping
@@ -44,10 +41,7 @@ def _setup_is_complete(config, result: DetectionResult) -> bool:
     app_asar_candidates = (launcher_root / "app.asar", launcher_root / "resources" / "app.asar")
     if any(app_asar.is_file() and app_asar.stat().st_mtime > marker.stat().st_mtime for app_asar in app_asar_candidates):
         return False
-    return (
-        emoji_font_fix_is_applied(result.compatdata_path)
-        and (not config.tricks_powershell or powershell_setup_is_complete(result.compatdata_path))
-    )
+    return not config.tricks_powershell or powershell_setup_is_complete(result.compatdata_path)
 
 
 def _require_launch_paths(result: DetectionResult) -> None:
@@ -92,7 +86,6 @@ def _prepare_prefix_and_launcher(context, logger, *, force: bool = False) -> Non
         ensure_egs_launcher_symlink(result.gta_path, dry_run=config.dry_run, logger=logger)
     apply_win10_mode(config, result.selected_platform, result.compatdata_path, dry_run=config.dry_run, logger=logger)
     apply_powershell(config, result.selected_platform, result.compatdata_path, dry_run=config.dry_run, logger=logger)
-    apply_emoji_font_fix(config, result.compatdata_path, result.selected_platform, dry_run=config.dry_run, logger=logger)
     report = patch_js_tree(
         _patch_root(config, result),
         dry_run=config.dry_run,
@@ -116,7 +109,6 @@ def cmd_patch(args: argparse.Namespace) -> int:
     context, logger = load_context(args)
     _apply_cli_modes(context.config, args)
     _prepare_prefix_and_launcher(context, logger, force=True)
-    _repair_multiplayer_if_needed(context, logger, args)
     return 0
 
 
@@ -125,44 +117,6 @@ def cmd_install(args: argparse.Namespace) -> int:
     _apply_cli_modes(context.config, args)
     _prepare_prefix_and_launcher(context, logger)
     return 0
-
-
-def _repair_multiplayer_if_needed(context, logger, args: argparse.Namespace) -> None:
-    config, result = context.config, context.result
-    if result.compatdata_path is None:
-        return
-    if getattr(args, "no_repair_multiplayer_cache", False):
-        logger.info("Majestic Multiplayer cache repair skipped by CLI flag")
-        return
-    force = getattr(args, "repair_multiplayer_cache", False)
-    if not force and not config.repair_multiplayer_cache_on_patch:
-        logger.info("Majestic Multiplayer cache repair disabled in config")
-        return
-    reports = repair_multiplayer_cache(
-        result.compatdata_path,
-        threshold=config.repair_wheel_error_threshold,
-        force=force,
-        dry_run=config.dry_run,
-        logger=logger,
-        min_mtime=latest_repair_time(result.compatdata_path, result.gta_path),
-    )
-    if config.repair_gta_conflicts_on_patch and result.gta_path is not None:
-        reports = repair_gta_conflicts(result.gta_path, reports, dry_run=config.dry_run, logger=logger)
-    if not reports:
-        logger.info("Majestic Multiplayer cache was not found; repair skipped")
-        return
-    repaired = [report for report in reports if report.repaired]
-    if repaired:
-        for report in repaired:
-            action = "Would archive" if report.dry_run else "Archived"
-            if report.backup_path:
-                logger.warning("%s Majestic Multiplayer cache to %s", action, report.backup_path)
-            if report.gta_root_backup_path:
-                logger.warning("%s stale GTA root Majestic files to %s", action, report.gta_root_backup_path)
-            if report.gen9_backup_path:
-                logger.warning("%s GTA Gen9/Enhanced DLC folders to %s", action, report.gen9_backup_path)
-        if any(report.backup_path or report.gta_root_backup_path for report in repaired):
-            logger.warning("Majestic will redownload/reinject repaired files on next launch")
 
 
 def cmd_clean(args: argparse.Namespace) -> int:
@@ -238,21 +192,9 @@ def cmd_run(args: argparse.Namespace) -> int:
     mapping = _prepare_wine_drives(config, result, logger)
     clear_caps_lock(dry_run=config.dry_run, logger=logger)
     command = build_proton_command(config, result.proton_path, result.compatdata_path, result.steam_root, result.majestic_exe, result.selected_platform, mapping)
-    discord = configure_discord_bridge_environment(
-        config,
-        compatdata=result.compatdata_path,
-        proton_path=result.proton_path,
-        steam_root=result.steam_root,
-        app_id=config.app_id,
-        env=command.env,
-        logger=logger,
-    )
     if getattr(args, "radio_safe", False):
         logger.info("G Radio safe mode enabled: collecting report and enabling extra Proton/Wine logs")
         report = build_radio_report(config, result, dry_run=config.dry_run)
         logger.info("G Radio diagnostic report: %s", report.report_path)
         command.env = radio_safe_env(command.env)
-    try:
-        return run_proton_managed(command, config, result.compatdata_path, dry_run=config.dry_run, logger=logger)
-    finally:
-        stop_discord_bridge(discord, compatdata=result.compatdata_path, proton_path=result.proton_path, app_id=config.app_id, logger=logger)
+    return run_proton_managed(command, config, result.compatdata_path, dry_run=config.dry_run, logger=logger)

@@ -8,7 +8,6 @@ from .errors import ConfigError
 from .keys import CONFIG_KEYS
 
 SECTION_PREFIXES = {"shutdown": "SHUTDOWN_", "repair": "REPAIR_"}
-MULTI_TOKEN_VALUES = {"MAJESTIC_INSTALLER_ARGS", "MAJESTIC_LAUNCHER_FLAGS", "MAJESTIC_LAUNCH_OPTIONS"}
 
 
 def parse_bool(value: str | None, default: bool = False) -> bool:
@@ -63,7 +62,11 @@ def parse_shell_config(path: Path) -> dict[str, str]:
             parsed = shlex.split(raw_value.strip(), posix=True)
         except ValueError as exc:
             raise ConfigError(f"{path}:{lineno}: cannot parse {key}") from exc
-        values[key] = " ".join(parsed) if key in MULTI_TOKEN_VALUES else (parsed[0] if parsed else "")
+        # A number of legitimate values contain spaces (for example
+        # ``Proton - Experimental`` and full GPU names). shlex has already
+        # handled quotes safely, so retain all parsed tokens instead of
+        # silently truncating ordinary values at the first space.
+        values[key] = " ".join(parsed)
     return values
 
 

@@ -59,9 +59,7 @@ Examples of representing our community include using an official email address, 
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement at:
 
-```txt
-support@majestic-linux.com
-```
+[the repository owner through GitHub](https://github.com/isnotcursed).
 
 All complaints will be reviewed and investigated promptly and fairly.
 

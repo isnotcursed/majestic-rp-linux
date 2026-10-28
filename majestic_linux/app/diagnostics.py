@@ -10,11 +10,8 @@ from pathlib import Path
 from ..core.config import load_config
 from ..core.config_file import ensure_config_file, resolve_config_path
 from ..core.logger import setup_logging
-from ..discord.bridge import configure_discord_bridge_environment
-from ..discord.bridge import discord_ipc_sockets, find_discord_bridge
 from ..patching.patcher import patch_state
 from ..runtime.assets import inspect_launcher_assets
-from ..runtime.fonts import emoji_font_status
 from ..runtime.fixups import prepare_proton_runtime_fixups
 from ..runtime.launcher import installer_target
 from ..runtime.lifecycle import prefix_processes
@@ -53,14 +50,6 @@ def cmd_env(args: argparse.Namespace) -> int:
     mapping = prepare_wine_mapping(result.compatdata_path, result.gta_path, config.gta_wine_drive, dry_run=True)
     command = build_proton_command(
         config, result.proton_path, result.compatdata_path, result.steam_root, result.majestic_exe, result.selected_platform, mapping
-    )
-    configure_discord_bridge_environment(
-        config,
-        compatdata=result.compatdata_path,
-        proton_path=result.proton_path,
-        steam_root=result.steam_root,
-        app_id=config.app_id,
-        env=command.env,
     )
     print("Command:")
     print(" ".join(command.argv))
@@ -180,15 +169,10 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         print(f"Tricks tool:       {plan.tool or '-'} ({plan.reason})")
         print(f"Wine prefix:       {result.compatdata_path / 'pfx'}")
         print(f"wineserver:        {shutil.which('wineserver') or '-'}")
-        bridge = find_discord_bridge(config, result.compatdata_path, logger)
-        print(f"Discord bridge:    {bridge or '-'}")
-        sockets = discord_ipc_sockets()
-        print(f"Discord IPC:       {sockets[0] if sockets else '-'}")
         processes = prefix_processes(result.compatdata_path / "pfx", result.compatdata_path)
         print(f"Prefix processes:  {len(processes)}")
         for process in processes[:8]:
             print(f"  pid={process.pid} name={process.name}")
-        _print_emoji_font_status(result.compatdata_path)
     if result.proton_path:
         print(f"Proton executable: {'yes' if result.proton_path.is_file() else 'no'}")
     if result.gta_path:
@@ -253,13 +237,3 @@ def _print_asset_report(report) -> None:
         print(f"    missing: {item}")
     for warning in report.warnings:
         print(f"  recommendation: {warning}")
-
-
-def _print_emoji_font_status(compatdata: Path) -> None:
-    status = emoji_font_status(compatdata)
-    print("Emoji font fix:")
-    print(f"  applied:      {'yes' if status.applied else 'no'}")
-    print(f"  prefix font:  {'yes' if status.prefix_font.exists() else 'no'} ({status.prefix_font})")
-    print(f"  system font:  {'yes' if status.system_font.exists() else 'no'} ({status.system_font})")
-    print(f"  marker:       {'yes' if status.marker.exists() else 'no'} ({status.marker})")
-    print(f"  registry:     {'yes' if status.registry_applied else 'no'}")

@@ -23,9 +23,6 @@ def build_parser() -> argparse.ArgumentParser:
     for command in ("install", "installer", "patch"):
         command_parser = sub.add_parser(command)
         command_parser.add_argument("--gui", action="store_true", help="Use GUI mode for protontricks/winetricks setup")
-        if command == "patch":
-            command_parser.add_argument("--repair-multiplayer-cache", action="store_true", help="Force Majestic Multiplayer cache repair")
-            command_parser.add_argument("--no-repair-multiplayer-cache", action="store_true", help="Skip Majestic Multiplayer cache repair")
     purge_parser = sub.add_parser("purge-majestic")
     purge_parser.add_argument("--include-trash", action="store_true", help="Also remove Majestic entries from the Linux trash")
     purge_parser.add_argument("--include-installers", action="store_true", help="Also remove Majestic installer files from home/download folders")

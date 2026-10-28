@@ -37,13 +37,25 @@ def patch_updater(file: Path, *, dry_run: bool) -> PatchStatus:
     if UPDATER_DISABLED_MARKER in src:
         return status
     needle = "const showUpdater = isPackaged || process.env.SHOW_UPDATER === \"1\";"
-    if needle not in src:
-        return status
-    replacement = (
-        "// Disabled for the local Wine build: skip the launcher self-update gate.\n"
-        "  const showUpdater = false; // " + UPDATER_DISABLED_MARKER
-    )
-    src = src.replace(needle, replacement, 1)
+    if needle in src:
+        replacement = (
+            "// Disabled for the local Wine build: skip the launcher self-update gate.\n"
+            "  const showUpdater = false; // " + UPDATER_DISABLED_MARKER
+        )
+        src = src.replace(needle, replacement, 1)
+    else:
+        # Packaged 6.3.x launchers are minified. Keep the variable name chosen
+        # by the minifier, but force the updater-window gate off. This pattern
+        # deliberately includes SHOW_UPDATER and therefore cannot hit unrelated
+        # ``isPackaged ||`` expressions elsewhere in the bundle.
+        updater_gate = re.search(
+            r'([,;])([A-Za-z_$][A-Za-z0-9_$]*)=([A-Za-z_$][A-Za-z0-9_$]*)\|\|process\.env\.SHOW_UPDATER==="1"([,;])',
+            src,
+        )
+        if updater_gate is None:
+            raise PatchError(f"{file}: could not find Launcher 6.x updater gate")
+        replacement = f"{updater_gate.group(1)}{updater_gate.group(2)}=!1/* {UPDATER_DISABLED_MARKER} */{updater_gate.group(4)}"
+        src = src[: updater_gate.start()] + replacement + src[updater_gate.end() :]
     validate_text(src, file)
     write_text(file, src, dry_run=dry_run, status=status)
     status.details.append("auto-updater disabled")
@@ -73,22 +85,27 @@ def patch_modern_index(file: Path, *, dry_run: bool) -> PatchStatus:
         write_text(file, src, dry_run=dry_run, status=status)
         status.details.append("modern pre-backup platform migration v2")
         return status
-    needle = "    let install = this.deps.install.get();"
-    if needle not in src:
+    # Production launcher files are minified. Launcher 6.1.x happened to keep
+    # the descriptive local name ``install``; 6.3.4 renamed it to ``n``.
+    # Match the exact install-service call and preserve the minifier's local
+    # variable instead of coupling the patch to one particular build.
+    install_anchor = re.search(r"let ([A-Za-z_$][A-Za-z0-9_$]*)=this\.deps\.install\.get\(\);", src)
+    if install_anchor is None:
         raise PatchError(f"{file}: could not find Launcher 6.x install-selection anchor")
-    replacement = f"""    /* {MODERN_INDEX_MARKER}: select Proton GTA before backup DRM staging. */
-    let install = this.deps.install.get();
+    install_var = install_anchor.group(1)
+    replacement = f"""/* {MODERN_INDEX_MARKER}: select Proton GTA before backup DRM staging. */
+    let {install_var}=this.deps.install.get();
     const JO_PROTON_GTA_PATH = process.env.MAJESTIC_GTA_WIN_PATH;
     const JO_PROTON_PLATFORM = process.env.MAJESTIC_GTA_STORE_PLATFORM || process.env.MAJESTIC_PLATFORM;
     const JO_PROTON_INSTALL_SOURCE = {{ steam: \"steam\", egs: \"epic\", rgl: \"rockstar\" }}[JO_PROTON_PLATFORM];
     if (JO_PROTON_GTA_PATH && JO_PROTON_INSTALL_SOURCE) {{
-      install = {{ path: JO_PROTON_GTA_PATH, source: JO_PROTON_INSTALL_SOURCE }};
+      {install_var} = {{ path: JO_PROTON_GTA_PATH, source: JO_PROTON_INSTALL_SOURCE }};
       this.deps.logger.info(\"game.play: using Proton GTA install before backup preparation\", {{
         path: JO_PROTON_GTA_PATH,
         source: JO_PROTON_INSTALL_SOURCE
       }});
     }}"""
-    src = src.replace(needle, replacement, 1)
+    src = src[: install_anchor.start()] + replacement + src[install_anchor.end() :]
     validate_text(src, file)
     write_text(file, src, dry_run=dry_run, status=status)
     status.details.append("modern pre-backup GTA platform")

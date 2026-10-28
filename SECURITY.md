@@ -1,135 +1,59 @@
-# Security Policy 🔒
+# Политика безопасности
 
-## Supported Versions
+## Поддерживаемые версии
 
-Security updates and fixes are provided only for the latest public version of **majestic-rp-linux**.
+| Версия | Поддержка |
+| --- | --- |
+| Последний релиз | Да |
+| Ветка `6.3.4` | Да |
+| Ветка `main` | Нет |
+| Старые и сторонние сборки | Нет |
 
-| Version                 | Supported |
-| ----------------------- | --------- |
-| Latest release          | ✅         |
-| Main branch             | ✅         |
-| Older releases          | ❌         |
-| Forks / modified builds | ❌         |
+## Сообщение об уязвимости
 
-If you are using an older release, please update to the latest version before reporting a security issue.
+Не публикуйте уязвимость в обычном Issue. Используйте один из закрытых каналов:
 
----
+1. GitHub Security Advisories этого репозитория;
+2. личный контакт с [владельцем репозитория](https://github.com/isnotcursed).
 
-## Project Scope
+Укажите:
 
-This project focuses on improving the experience of running **Majestic RP / GTA V on Linux** using Steam, Proton, Wine, and related Linux compatibility tooling.
-
-This project is not officially affiliated with:
-
-* Majestic RP
-* Rockstar Games
-* Take-Two Interactive
-* Valve
-* Epic Games
-
----
-
-## Reporting a Vulnerability
-
-If you discover a security vulnerability, please do **not** open a public Issue.
-
-Instead, report it privately through one of the following options:
-
-1. Use **GitHub Security Advisories** if available for this repository.
-2. Contact the maintainer directly through GitHub.
-
-When reporting a vulnerability, please include:
-
-```txt
-Description:
-Affected version / commit:
-Operating system:
-Steps to reproduce:
-Potential impact:
-Logs or screenshots if safe to share:
-Suggested fix if available:
+```text
+Описание:
+Затронутая версия или commit:
+Операционная система:
+Шаги воспроизведения:
+Возможные последствия:
+Безопасные логи или скриншоты:
+Предлагаемое исправление:
 ```
 
-Please remove private information before sending logs or screenshots.
+## Что считается проблемой безопасности
 
----
+- утечка паролей, cookies, токенов или данных аккаунта;
+- небезопасная обработка пользовательских путей;
+- выполнение команд через shell injection;
+- скачивание или запуск неподтверждённых бинарников;
+- удаление или перемещение файлов за пределами заявленной области;
+- публикация приватных данных в логах;
+- небезопасное обновление или патчинг лаунчера.
 
-## Do Not Share Publicly
+Обычные падения игры, ошибки Proton, проблемы интерфейса и отсутствие
+зависимостей следует оформлять как обычные Issues.
 
-Do not post sensitive information in Issues, Discussions, Pull Requests, or public comments.
+## Какие данные нельзя публиковать
 
-Sensitive information includes:
+Не размещайте публично:
 
-* Account credentials
-* Passwords
-* Tokens
-* Cookies
-* API keys
-* Private keys
-* Personal account data
-* Steam account details
-* Rockstar / Epic account data
-* Private file paths containing personal information
+- пароли, токены, cookies, ключи и приватные URL;
+- данные Steam, Rockstar или Majestic ID;
+- логи с персональными данными;
+- реальные приватные пути, если они раскрывают нежелательную информацию.
 
-If sensitive information is accidentally published, remove it immediately and rotate the affected credentials.
+Если секрет уже опубликован, удалите его из сообщения и немедленно замените или
+отзовите соответствующие учётные данные.
 
----
+## Координированное раскрытие
 
-## What Counts as a Security Issue
-
-Examples of security issues include:
-
-* Leaking tokens, cookies, or credentials
-* Unsafe handling of user-provided paths
-* Unsafe command execution
-* Downloading or executing files without proper validation
-* Permission issues that expose private user files
-* Logs that expose sensitive user data
-* Insecure update, patching, or installation behavior
-
----
-
-## What Is Not a Security Issue
-
-The following should usually be reported as regular Issues or Discussions instead:
-
-* Game crashes
-* Proton / Wine compatibility problems
-* Steam Deck launch problems
-* Rockstar Launcher or Epic Games setup issues
-* Missing dependencies
-* Broken install scripts
-* UI bugs
-* General troubleshooting questions
-
----
-
-## Response Expectations
-
-Security reports will be reviewed as soon as possible.
-
-If the report is valid, the maintainer may:
-
-* Confirm the issue
-* Ask for additional details
-* Prepare a fix
-* Release a patched version
-* Credit the reporter if requested
-
-If the report is not considered a security issue, it may be redirected to Issues or Discussions.
-
----
-
-## Responsible Disclosure
-
-Please give the maintainer reasonable time to investigate and fix the issue before publicly disclosing details.
-
-Do not use a vulnerability to access, modify, delete, or expose data that does not belong to you.
-
----
-
-## Final Note
-
-Security reports help keep the project safer for everyone.
-
-Thank you for helping improve **majestic-rp-linux** 🐧🎮
+Дайте сопровождающему разумное время на проверку и выпуск исправления. Не
+используйте уязвимость для доступа к чужим данным и системам.

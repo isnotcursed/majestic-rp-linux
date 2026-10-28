@@ -6,9 +6,6 @@ from pathlib import Path
 from .config_file import ensure_config_file, resolve_config_path
 from .config_parser import merged_values, parse_bool, parse_float, parse_int, parse_path
 
-DEFAULT_DISCORD_BRIDGE_URL = "https://github.com/0e4ef622/wine-discord-ipc-bridge/releases/download/v0.0.3/winediscordipcbridge.exe"
-
-
 @dataclass(slots=True)
 class RunnerConfig:
     config_path: Path
@@ -37,7 +34,7 @@ class RunnerConfig:
     proton_path: Path | None = None
     majestic_exe: Path | None = None
     source_root: Path | None = None
-    installer_url: str = "https://cdn.majestic-files.net/launcher/cis/MajesticLauncherSetup.exe"
+    installer_url: str = ""
     installer_path: Path | None = None
     installer_args: str = ""
     installer_timeout: int = 30
@@ -46,11 +43,6 @@ class RunnerConfig:
     tricks_timeout: int = 0
     tricks_tool: str = "auto"
     tricks_gui: bool = False
-    emoji_font_url: str = "https://raw.githubusercontent.com/thedemons/merge_color_emoji_font/main/seguiemj.ttf"
-    discord_bridge_enabled: bool = True
-    discord_bridge_path: str = ""
-    discord_bridge_url: str = DEFAULT_DISCORD_BRIDGE_URL
-    steam_overlay: bool = False
     app_id: str = "271590"
     dry_run: bool = False
     auto_detect: bool = True
@@ -61,9 +53,6 @@ class RunnerConfig:
     force_kill_timeout_seconds: int = 5
     kill_only_current_prefix: bool = True
     wait_wineserver: bool = True
-    repair_gta_conflicts_on_patch: bool = True
-    repair_multiplayer_cache_on_patch: bool = True
-    repair_wheel_error_threshold: int = 25
     radio_disable_winegstreamer: bool = False
     runtime_library_paths: list[Path] | None = None
     log_directory: Path | None = None
@@ -102,7 +91,7 @@ def load_config(config_path: Path | str | None = None, *, dry_run: bool | None =
         proton_path=parse_path(values.get("PROTON_PATH")),
         majestic_exe=parse_path(values.get("MAJESTIC_EXE")),
         source_root=parse_path(values.get("MAJESTIC_SOURCE_ROOT")),
-        installer_url=values.get("MAJESTIC_INSTALLER_URL", RunnerConfig.installer_url),
+        installer_url=values.get("MAJESTIC_INSTALLER_URL", ""),
         installer_path=parse_path(values.get("MAJESTIC_INSTALLER_PATH")),
         installer_args=values.get("MAJESTIC_INSTALLER_ARGS", RunnerConfig.installer_args),
         installer_timeout=parse_int(values.get("MAJESTIC_INSTALLER_TIMEOUT"), 30),
@@ -110,11 +99,6 @@ def load_config(config_path: Path | str | None = None, *, dry_run: bool | None =
         tricks_powershell=parse_bool(values.get("TRICKS_POWERSHELL"), True),
         tricks_timeout=parse_int(values.get("PROTONTRICKS_TIMEOUT"), 0),
         tricks_tool=values.get("TRICKS_TOOL", "auto").strip().lower() or "auto",
-        emoji_font_url=values.get("EMOJI_FONT_URL", RunnerConfig.emoji_font_url),
-        discord_bridge_enabled=parse_bool(values.get("DISCORD_BRIDGE_ENABLED"), True),
-        discord_bridge_path=values.get("DISCORD_BRIDGE_PATH", ""),
-        discord_bridge_url=values.get("DISCORD_BRIDGE_URL", RunnerConfig.discord_bridge_url),
-        steam_overlay=parse_bool(values.get("MAJESTIC_STEAM_OVERLAY"), False),
         app_id=values.get("APP_ID") or "271590",
         dry_run=parse_bool(values.get("DRY_RUN"), False),
         auto_detect=parse_bool(values.get("MAJESTIC_AUTO_DETECT"), True),
@@ -125,9 +109,6 @@ def load_config(config_path: Path | str | None = None, *, dry_run: bool | None =
         force_kill_timeout_seconds=parse_int(values.get("SHUTDOWN_FORCE_KILL_TIMEOUT_SECONDS"), 5),
         kill_only_current_prefix=parse_bool(values.get("SHUTDOWN_KILL_ONLY_CURRENT_PREFIX"), True),
         wait_wineserver=parse_bool(values.get("SHUTDOWN_WAIT_WINESERVER"), True),
-        repair_gta_conflicts_on_patch=parse_bool(values.get("REPAIR_GTA_CONFLICTS_ON_PATCH"), True),
-        repair_multiplayer_cache_on_patch=parse_bool(values.get("REPAIR_MULTIPLAYER_CACHE_ON_PATCH"), True),
-        repair_wheel_error_threshold=parse_int(values.get("REPAIR_WHEEL_ERROR_THRESHOLD"), 25),
         log_directory=parse_path(values.get("MAJESTIC_LOG_DIRECTORY")),
     )
     if dry_run is not None:
@@ -143,7 +124,6 @@ def config_summary(config: RunnerConfig) -> dict[str, object]:
         "auto_detect": config.auto_detect,
         "log_level": config.log_level,
         "kill_wine_on_exit": config.kill_wine_on_exit,
-        "steam_overlay": config.steam_overlay,
         "steam_runtime": config.steam_runtime,
         "input_method": config.input_method,
         "steam_root": str(config.steam_root) if config.steam_root else "",
