@@ -42,8 +42,14 @@ Run before committing:
 ```bash
 python3 -m compileall -q majestic_linux
 python3 -m unittest discover -s tests -v
+bash -n install-and-run-majestic-proton.sh packaging/*.sh
 git diff --check
 ```
+
+When changing packaging, keep `packaging/asar/package-lock.json` reproducible,
+inspect package contents, and smoke-test the AppImage with
+`APPIMAGE_EXTRACT_AND_RUN=1 ... setup --help`. Branch builds must upload Actions
+artifacts; only `v*` tags may create a GitHub Release.
 
 For a new supported launcher build, also test against an isolated copy of the
 official installer without executing it:

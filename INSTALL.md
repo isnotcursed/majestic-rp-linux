@@ -1,7 +1,44 @@
 # Установка
 
-Для ветки `6.3.4` поддерживается установка из исходников. Пакеты upstream могут
-содержать другой код и не обязаны включать патч совместимости с Launcher 6.3.4.
+Для ветки `6.3.4` публикуются `.deb`, `.rpm` и AppImage. Пакеты из другого
+репозитория могут содержать иной код и не обязаны включать патч совместимости с
+Launcher 6.3.4.
+
+## Готовые сборки
+
+Скачайте нужный файл и `SHA256SUMS` со страницы
+[Releases](https://github.com/isnotcursed/majestic-rp-linux/releases), затем
+проверьте контрольную сумму:
+
+```bash
+sha256sum -c SHA256SUMS --ignore-missing
+```
+
+Debian/Ubuntu:
+
+```bash
+sudo apt install ./majestic-linux-runner_*_all.deb
+majestic-linux
+```
+
+Fedora:
+
+```bash
+sudo dnf install ./majestic-linux-runner-*.noarch.rpm
+majestic-linux
+```
+
+AppImage:
+
+```bash
+chmod +x majestic-linux-runner-*.AppImage
+./majestic-linux-runner-*.AppImage
+```
+
+Первый запуск должен происходить в терминале: появится выбор между загрузкой с
+официального CDN Majestic и локальным `MajesticLauncherSetup.exe`. После выбора
+создаётся пользовательский конфиг и запускается раннер. Повторный запуск сразу
+переходит к проверке и запуску лаунчера.
 
 ## Требования
 

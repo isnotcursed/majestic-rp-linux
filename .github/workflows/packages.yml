@@ -1,0 +1,108 @@
+name: Build Packages
+
+on:
+  push:
+    branches: ["6.3.4"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "22"
+
+jobs:
+  deb:
+    name: DEB
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: packaging/asar/package-lock.json
+      - name: Install locked asar dependency
+        run: npm ci --prefix packaging/asar --omit=dev --ignore-scripts
+      - name: Build and inspect DEB
+        run: packaging/build-deb.sh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: majestic-linux-runner-deb
+          path: dist-packages/*
+          if-no-files-found: error
+
+  rpm:
+    name: RPM
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install build dependencies
+        run: dnf install -y git nodejs npm rpm-build tar gzip
+      - uses: actions/checkout@v7
+      - name: Install locked asar dependency
+        run: npm ci --prefix packaging/asar --omit=dev --ignore-scripts
+      - name: Build and inspect RPM
+        run: packaging/build-rpm.sh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: majestic-linux-runner-rpm
+          path: dist-packages/*
+          if-no-files-found: error
+
+  appimage:
+    name: AppImage
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: packaging/asar/package-lock.json
+      - name: Install locked build dependencies
+        run: |
+          python -m pip install --disable-pip-version-check pyinstaller==6.22.3
+          npm ci --prefix packaging/asar --omit=dev --ignore-scripts
+      - name: Build AppImage
+        run: packaging/build-appimage.sh
+      - name: Smoke-test AppImage
+        run: APPIMAGE_EXTRACT_AND_RUN=1 dist-packages/*.AppImage setup --help
+      - uses: actions/upload-artifact@v7
+        with:
+          name: majestic-linux-runner-appimage
+          path: dist-packages/*
+          if-no-files-found: error
+
+  release:
+    name: GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [deb, rpm, appimage]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: majestic-linux-runner-*
+          path: release-assets
+          merge-multiple: true
+      - name: Create combined checksums
+        working-directory: release-assets
+        run: |
+          rm -f -- ./*.sha256
+          sha256sum -- *.deb *.rpm *.AppImage > SHA256SUMS
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release-assets/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Majestic Linux Runner $GITHUB_REF_NAME" \
+            --generate-notes \
+            --verify-tag

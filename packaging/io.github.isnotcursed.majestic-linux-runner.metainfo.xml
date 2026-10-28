@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.isnotcursed.majestic-linux-runner</id>
+  <name>Majestic RP Linux Runner</name>
+  <summary>Run Majestic RP through Proton</summary>
+  <summary xml:lang="ru">Запуск Majestic RP через Proton</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <description>
+    <p>Unofficial runner that prepares a Proton prefix, installs the official Majestic Launcher and applies the Linux compatibility patch.</p>
+    <p xml:lang="ru">Неофициальный раннер, который готовит Proton-префикс, устанавливает официальный Majestic Launcher и применяет патч совместимости с Linux.</p>
+  </description>
+  <launchable type="desktop-id">io.github.isnotcursed.majestic-linux-runner.desktop</launchable>
+  <url type="homepage">https://github.com/isnotcursed/majestic-rp-linux</url>
+  <provides>
+    <binary>majestic-linux</binary>
+  </provides>
+  <developer id="io.github.isnotcursed">
+    <name>isnotcursed</name>
+  </developer>
+  <content_rating type="oars-1.1"/>
+</component>

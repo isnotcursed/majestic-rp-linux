@@ -1,0 +1,9 @@
+{
+  "name": "majestic-linux-runner-asar-runtime",
+  "private": true,
+  "version": "1.0.0",
+  "license": "MIT",
+  "dependencies": {
+    "@electron/asar": "3.4.1"
+  }
+}

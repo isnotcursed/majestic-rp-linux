@@ -7,6 +7,16 @@ CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 CONFIG_PATH="$CONFIG_HOME/majestic-runner/majestic-runner.conf"
 CACHE_INSTALLER="$CACHE_HOME/majestic-runner/MajesticLauncherSetup.exe"
+CONFIG_TEMPLATE="$SCRIPT_DIR/examples/majestic-runner.example.conf"
+
+if [[ ! -f "$CONFIG_TEMPLATE" ]]; then
+  CONFIG_TEMPLATE="$SCRIPT_DIR/../share/doc/majestic-linux-runner/majestic-runner.example.conf"
+fi
+
+SYSTEM_PYTHONPATH="$SCRIPT_DIR/../lib/majestic-linux-runner/python"
+if [[ -d "$SYSTEM_PYTHONPATH/majestic_linux" ]]; then
+  export PYTHONPATH="$SYSTEM_PYTHONPATH${PYTHONPATH:+:$PYTHONPATH}"
+fi
 
 cd "$SCRIPT_DIR"
 
@@ -30,44 +40,38 @@ ensure_config() {
   if [[ -f "$CONFIG_PATH" ]]; then
     return
   fi
+  [[ -f "$CONFIG_TEMPLATE" ]] || die "не найден шаблон конфига: $CONFIG_TEMPLATE"
   mkdir -p -- "$(dirname -- "$CONFIG_PATH")"
-  cp -- "$SCRIPT_DIR/examples/majestic-runner.example.conf" "$CONFIG_PATH"
+  cp -- "$CONFIG_TEMPLATE" "$CONFIG_PATH"
   printf 'Создан конфиг: %s\n' "$CONFIG_PATH"
 }
 
 save_installer_path() {
   local installer_path="$1"
+  [[ "$installer_path" != *$'\n'* && "$installer_path" != *'"'* ]] || \
+    die "путь к установщику содержит неподдерживаемые символы"
   ensure_config
-  BOOTSTRAP_CONFIG_PATH="$CONFIG_PATH" \
-  BOOTSTRAP_INSTALLER_PATH="$installer_path" \
-  python3 - <<'PY'
-import os
-from pathlib import Path
-
-config_path = Path(os.environ["BOOTSTRAP_CONFIG_PATH"])
-installer_path = Path(os.environ["BOOTSTRAP_INSTALLER_PATH"]).resolve()
-replacements = {
-    "MAJESTIC_INSTALLER_URL": "",
-    "MAJESTIC_INSTALLER_PATH": f'"{installer_path}"',
-}
-lines = config_path.read_text(encoding="utf-8").splitlines()
-seen = set()
-result = []
-for line in lines:
-    key = line.split("=", 1)[0].strip() if "=" in line else ""
-    if key in replacements:
-        result.append(f"{key}={replacements[key]}")
-        seen.add(key)
-    else:
-        result.append(line)
-for key, value in replacements.items():
-    if key not in seen:
-        result.append(f"{key}={value}")
-temporary = config_path.with_name(config_path.name + ".tmp")
-temporary.write_text("\n".join(result) + "\n", encoding="utf-8")
-temporary.replace(config_path)
-print(f"Настроен официальный установщик: {installer_path}")
-PY
+  local temporary_config found_url=0 found_path=0 line
+  temporary_config="$(mktemp "$(dirname -- "$CONFIG_PATH")/.majestic-runner.conf.XXXXXX")"
+  trap 'rm -f -- "$temporary_config"' RETURN
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    case "$line" in
+      MAJESTIC_INSTALLER_URL=*)
+        printf 'MAJESTIC_INSTALLER_URL=\n' >> "$temporary_config"
+        found_url=1
+        ;;
+      MAJESTIC_INSTALLER_PATH=*)
+        printf 'MAJESTIC_INSTALLER_PATH="%s"\n' "$installer_path" >> "$temporary_config"
+        found_path=1
+        ;;
+      *) printf '%s\n' "$line" >> "$temporary_config" ;;
+    esac
+  done < "$CONFIG_PATH"
+  [[ "$found_url" -eq 1 ]] || printf 'MAJESTIC_INSTALLER_URL=\n' >> "$temporary_config"
+  [[ "$found_path" -eq 1 ]] || printf 'MAJESTIC_INSTALLER_PATH="%s"\n' "$installer_path" >> "$temporary_config"
+  mv -- "$temporary_config" "$CONFIG_PATH"
+  trap - RETURN
+  printf 'Настроен официальный установщик: %s\n' "$installer_path"
 }
 
 download_official_installer() {
@@ -167,7 +171,16 @@ if [[ "${1:-}" == "setup" ]]; then
 fi
 
 if [[ $# -eq 0 ]]; then
+  if [[ ! -f "$CONFIG_PATH" ]]; then
+    setup_installer
+  fi
+  if [[ -n "${MAJESTIC_RUNNER_BIN:-}" ]]; then
+    exec "$MAJESTIC_RUNNER_BIN" run
+  fi
   exec python3 -m majestic_linux run
 fi
 
+if [[ -n "${MAJESTIC_RUNNER_BIN:-}" ]]; then
+  exec "$MAJESTIC_RUNNER_BIN" "$@"
+fi
 exec python3 -m majestic_linux "$@"

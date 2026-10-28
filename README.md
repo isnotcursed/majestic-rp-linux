@@ -53,6 +53,39 @@ asar --version
 
 ## Установка раннера
 
+### Готовые пакеты
+
+На странице [Releases](https://github.com/isnotcursed/majestic-rp-linux/releases)
+публикуются три варианта для `x86_64`:
+
+- `.deb` — Debian, Ubuntu и производные;
+- `.rpm` — Fedora, openSUSE и производные;
+- `.AppImage` — переносимый вариант без установки Python и Node.js в систему.
+
+Для каждого коммита ветки `6.3.4` эти же файлы доступны как временные
+артефакты workflow **Build Packages** во вкладке Actions. Постоянный GitHub
+Release создаётся при публикации тега `v*` и содержит общий `SHA256SUMS`.
+
+После установки `.deb` или `.rpm` запустите `majestic-linux` из терминала либо
+ярлык **Majestic RP Linux Runner**. Для AppImage:
+
+```bash
+chmod +x majestic-linux-runner-*.AppImage
+./majestic-linux-runner-*.AppImage
+```
+
+При первом запуске откроется терминальное меню: скачать официальный установщик
+Majestic либо выбрать локальный `.exe`. После выбора раннер сохраняет конфиг,
+определяет Steam, GTA V Legacy, Proton и compatdata, затем выполняет обычную
+команду `run`. При следующих запусках меню уже не показывается. Если
+автоопределение не удалось, выполните `majestic-linux doctor` и исправьте
+параметры в `~/.config/majestic-runner/majestic-runner.conf`.
+
+`.deb` и `.rpm` используют системные Python и Node.js; AppImage содержит их
+внутри. Steam, GTA V Legacy, Proton и `protontricks` ни в один пакет не входят.
+
+### Из исходников
+
 ```bash
 git clone --branch 6.3.4 https://github.com/isnotcursed/majestic-rp-linux.git
 cd majestic-rp-linux
@@ -133,7 +166,7 @@ Steam, GTA, compatdata и Proton определяются автоматичес
 ## Разработка и тесты
 
 ```bash
-bash -n install-and-run-majestic-proton.sh
+bash -n install-and-run-majestic-proton.sh packaging/*.sh
 python3 -m compileall -q majestic_linux
 python3 -m unittest discover -s tests -v
 git diff --check
